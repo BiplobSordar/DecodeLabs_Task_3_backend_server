@@ -180,174 +180,174 @@ class DashboardService {
   }
 
   // Get recent activity
-  async getRecentActivity(userId, limit = 5) {
-    const userRole = await pool.query(
-      `SELECT r.name as role_name
-       FROM users u
-       LEFT JOIN user_roles ur ON u.id = ur.user_id
-       LEFT JOIN roles r ON ur.role_id = r.id
-       WHERE u.id = $1`,
-      [userId]
-    );
+ async getRecentActivity(userId, limit = 5) {
+  const userRole = await pool.query(
+    `SELECT r.name as role_name
+     FROM users u
+     LEFT JOIN user_roles ur ON u.id = ur.user_id
+     LEFT JOIN roles r ON ur.role_id = r.id
+     WHERE u.id = $1`,
+    [userId]
+  );
 
-    const role = userRole.rows[0]?.role_name || 'viewer';
+  const role = userRole.rows[0]?.role_name || 'viewer';
 
-    let query = '';
-    let queryParams = [];
+  let query = '';
+  let queryParams = [];
 
-    // Admin - see all activity
-    if (role === 'admin') {
-      query = `
-        (
-          SELECT 
-            'user_login' as type,
-            u.id as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            u.last_login as created_at,
-            'User ' || u.first_name || ' logged in' as message
-          FROM users u
-          WHERE u.last_login IS NOT NULL
-          ORDER BY u.last_login DESC
-          LIMIT $1
+  // Admin - see all activity
+  if (role === 'admin') {
+    query = `
+      (
+        SELECT 
+          'user_login' as type,
+          u.id as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          u.last_login as created_at,
+          'User ' || u.first_name || ' logged in' as message
+        FROM users u
+        WHERE u.last_login IS NOT NULL
+        ORDER BY u.last_login DESC
+        LIMIT $1
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_created' as type,
+          ta.created_by as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.created_at,
+          'Task "' || ta.title || '" created' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.created_by = u.id
+        ORDER BY ta.created_at DESC
+        LIMIT $1
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_completed' as type,
+          ta.assigned_to as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.completed_at as created_at,
+          'Task "' || ta.title || '" completed' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.assigned_to = u.id
+        WHERE ta.status = 'completed' AND ta.completed_at IS NOT NULL
+        ORDER BY ta.completed_at DESC
+        LIMIT $1
+      )
+      ORDER BY created_at DESC
+      LIMIT $2
+    `;
+    queryParams = [limit, limit];
+  } 
+  // Manager - see activity from their teams
+  else if (role === 'manager') {
+    query = `
+      (
+        SELECT 
+          'user_login' as type,
+          u.id as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          u.last_login as created_at,
+          'User ' || u.first_name || ' logged in' as message
+        FROM users u
+        WHERE u.last_login IS NOT NULL
+        ORDER BY u.last_login DESC
+        LIMIT $1
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_created' as type,
+          ta.created_by as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.created_at,
+          'Task "' || ta.title || '" created' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.created_by = u.id
+        WHERE ta.team_id IN (
+          SELECT team_id FROM team_users WHERE user_id = $1
         )
-        UNION ALL
-        (
-          SELECT 
-            'task_created' as type,
-            ta.created_by as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.created_at,
-            'Task "' || ta.title || '" created' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.created_by = u.id
-          ORDER BY ta.created_at DESC
-          LIMIT $1
-        )
-        UNION ALL
-        (
-          SELECT 
-            'task_completed' as type,
-            ta.assigned_to as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.completed_at as created_at,
-            'Task "' || ta.title || '" completed' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.assigned_to = u.id
-          WHERE ta.status = 'completed' AND ta.completed_at IS NOT NULL
-          ORDER BY ta.completed_at DESC
-          LIMIT $1
-        )
-        ORDER BY created_at DESC
+        ORDER BY ta.created_at DESC
         LIMIT $2
-      `;
-      queryParams = [limit, limit];
-    } 
-    // Manager - see activity from their teams
-    else if (role === 'manager') {
-      query = `
-        (
-          SELECT 
-            'user_login' as type,
-            u.id as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            u.last_login as created_at,
-            'User ' || u.first_name || ' logged in' as message
-          FROM users u
-          WHERE u.last_login IS NOT NULL
-          ORDER BY u.last_login DESC
-          LIMIT $1
-        )
-        UNION ALL
-        (
-          SELECT 
-            'task_created' as type,
-            ta.created_by as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.created_at,
-            'Task "' || ta.title || '" created' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.created_by = u.id
-          WHERE ta.team_id IN (
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_completed' as type,
+          ta.assigned_to as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.completed_at as created_at,
+          'Task "' || ta.title || '" completed' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.assigned_to = u.id
+        WHERE ta.status = 'completed' 
+          AND ta.completed_at IS NOT NULL
+          AND ta.team_id IN (
             SELECT team_id FROM team_users WHERE user_id = $1
           )
-          ORDER BY ta.created_at DESC
-          LIMIT $1
-        )
-        UNION ALL
-        (
-          SELECT 
-            'task_completed' as type,
-            ta.assigned_to as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.completed_at as created_at,
-            'Task "' || ta.title || '" completed' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.assigned_to = u.id
-          WHERE ta.status = 'completed' 
-            AND ta.completed_at IS NOT NULL
-            AND ta.team_id IN (
-              SELECT team_id FROM team_users WHERE user_id = $1
-            )
-          ORDER BY ta.completed_at DESC
-          LIMIT $1
-        )
-        ORDER BY created_at DESC
+        ORDER BY ta.completed_at DESC
         LIMIT $2
-      `;
-      queryParams = [userId, limit, limit];
-    } 
-    // Regular user - see their own activity
-    else {
-      query = `
-        (
-          SELECT 
-            'user_login' as type,
-            u.id as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            u.last_login as created_at,
-            'User ' || u.first_name || ' logged in' as message
-          FROM users u
-          WHERE u.id = $1 AND u.last_login IS NOT NULL
-        )
-        UNION ALL
-        (
-          SELECT 
-            'task_created' as type,
-            ta.created_by as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.created_at,
-            'Task "' || ta.title || '" created' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.created_by = u.id
-          WHERE ta.created_by = $1
-          ORDER BY ta.created_at DESC
-          LIMIT $2
-        )
-        UNION ALL
-        (
-          SELECT 
-            'task_completed' as type,
-            ta.assigned_to as user_id,
-            u.first_name || ' ' || u.last_name as user_name,
-            ta.completed_at as created_at,
-            'Task "' || ta.title || '" completed' as message
-          FROM tasks ta
-          LEFT JOIN users u ON ta.assigned_to = u.id
-          WHERE ta.assigned_to = $1 
-            AND ta.status = 'completed' 
-            AND ta.completed_at IS NOT NULL
-          ORDER BY ta.completed_at DESC
-          LIMIT $2
-        )
-        ORDER BY created_at DESC
-        LIMIT $3
-      `;
-      queryParams = [userId, limit, limit];
-    }
-
-    const result = await pool.query(query, queryParams);
-    return result.rows;
+      )
+      ORDER BY created_at DESC
+      LIMIT $3
+    `;
+    queryParams = [userId, limit, limit];
+  } 
+  // Regular user - see their own activity
+  else {
+    query = `
+      (
+        SELECT 
+          'user_login' as type,
+          u.id as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          u.last_login as created_at,
+          'User ' || u.first_name || ' logged in' as message
+        FROM users u
+        WHERE u.id = $1 AND u.last_login IS NOT NULL
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_created' as type,
+          ta.created_by as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.created_at,
+          'Task "' || ta.title || '" created' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.created_by = u.id
+        WHERE ta.created_by = $1
+        ORDER BY ta.created_at DESC
+        LIMIT $2
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_completed' as type,
+          ta.assigned_to as user_id,
+          u.first_name || ' ' || u.last_name as user_name,
+          ta.completed_at as created_at,
+          'Task "' || ta.title || '" completed' as message
+        FROM tasks ta
+        LEFT JOIN users u ON ta.assigned_to = u.id
+        WHERE ta.assigned_to = $1 
+          AND ta.status = 'completed' 
+          AND ta.completed_at IS NOT NULL
+        ORDER BY ta.completed_at DESC
+        LIMIT $2
+      )
+      ORDER BY created_at DESC
+      LIMIT $3
+    `;
+    queryParams = [userId, limit, limit];
   }
+
+  const result = await pool.query(query, queryParams);
+  return result.rows;
+}
 
   // Get user-specific stats (for profile)
   async getUserStats(userId) {
