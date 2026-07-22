@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+
+# Tests & Coverage
+coverage
+test
+tests
+__tests__
+
+# Temporary files
+tmp
+temp
+*.tmp
