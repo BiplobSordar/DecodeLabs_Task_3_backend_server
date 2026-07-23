@@ -5,7 +5,7 @@ import { MESSAGES } from '../../constants/messages.js';
 // Cookie configuration for access token
 const accessTokenCookieConfig = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: false,
   sameSite: 'lax',
   maxAge: 15 * 60 * 1000, // 15 minutes
   path: '/',
@@ -14,7 +14,7 @@ const accessTokenCookieConfig = {
 // Cookie configuration for refresh token
 const refreshTokenCookieConfig = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: false,
   sameSite: 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: '/api/auth/refresh-token',
