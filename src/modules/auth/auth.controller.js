@@ -15,11 +15,10 @@ const accessTokenCookieConfig = {
 const refreshTokenCookieConfig = {
   httpOnly: true,
   secure: false,
-  sameSite: 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: '/api/auth/refresh-token',
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
 };
-
 class AuthController {
   async register(req, res) {
     try {
