@@ -201,4 +201,4 @@ async logout(req,res){
 
 }
 
-export default new AuthController();
+export default new AuthController;
