@@ -6,12 +6,12 @@ import { MESSAGES } from '../../constants/messages.js';
 const accessTokenCookieConfig = {
   httpOnly: true,
   secure: false,
-  sameSite: 'lax',
-  maxAge: 15 * 60 * 1000, // 15 minutes
-  path: '/',
+  sameSite: "lax",
+  maxAge: 15 * 60 * 1000,
+  path: "/",
 };
 
-// Cookie configuration for refresh token
+
 const refreshTokenCookieConfig = {
   httpOnly: true,
   secure: false,
@@ -97,15 +97,16 @@ class AuthController {
       );
     } catch (error) {
       // Clear invalid tokens
-      res.clearCookie('accessToken', { path: '/' });
-      res.clearCookie('refreshToken', { path: '/api/auth/refresh-token' });
-      
-      return errorResponse(
-        res,
-        error.message,
-        401,
-        error.message
-      );
+        res.clearCookie('accessToken', { path: '/' });
+
+  res.clearCookie('refreshToken', { path: '/' });
+
+  return errorResponse(
+    res,
+    error.message,
+    401,
+    error.message
+  );
     }
   }
 
