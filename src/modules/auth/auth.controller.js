@@ -147,29 +147,58 @@ class AuthController {
     }
   }
 
-  async logout(req, res) {
-    try {
-      const refreshToken = req.cookies.refreshToken;
-      await AuthService.logout(req.user.userId, refreshToken);
-      
-      // Clear both cookies
-      res.clearCookie('accessToken', { path: '/' });
-      res.clearCookie('refreshToken', { path: '/api/auth/refresh-token' });
-      
-      return successResponse(
-        res,
-        null,
-        MESSAGES.AUTH.LOGOUT_SUCCESS
-      );
-    } catch (error) {
-      return errorResponse(
-        res,
-        error.message,
-        500,
-        error.message
-      );
-    }
-  }
+async logout(req,res){
+
+ try {
+
+ const refreshToken=req.cookies.refreshToken;
+
+ await AuthService.logout(
+   req.user.userId,
+   refreshToken
+ );
+
+
+ res.clearCookie(
+   'accessToken',
+   {
+     httpOnly:true,
+     secure:false,
+     sameSite:"lax",
+     path:"/"
+   }
+ );
+
+
+ res.clearCookie(
+   'refreshToken',
+   {
+     httpOnly:true,
+     secure:false,
+     sameSite:"lax",
+     path:"/"
+   }
+ );
+
+
+ return successResponse(
+   res,
+   null,
+   MESSAGES.AUTH.LOGOUT_SUCCESS
+ );
+
+
+ }catch(error){
+
+ return errorResponse(
+   res,
+   error.message,
+   500,
+   error.message
+ );
+
+ }
+
 }
 
 export default new AuthController();
