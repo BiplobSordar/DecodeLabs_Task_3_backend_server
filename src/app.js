@@ -20,7 +20,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-
+app.set('trust proxy', 1);
 app.use(cookieParser()); //  Required for reading cookies
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
