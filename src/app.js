@@ -39,7 +39,16 @@ const limiter = rateLimit({
     message: 'Too many requests, please try again later.',
   },
 });
-app.use('/api', limiter);
+app.use('/api', limiter);app.get("/cpu-test", (req, res) => {
+    const end = Date.now() + 10000;
+
+    while (Date.now() < end) {
+        Math.random();
+    }
+
+    res.send("done");
+});
+
 
 // Health check
 app.get('/health', (req, res) => {
