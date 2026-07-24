@@ -39,16 +39,23 @@ const limiter = rateLimit({
     message: 'Too many requests, please try again later.',
   },
 });
-app.use('/api', limiter);app.get("/cpu-test", (req, res) => {
-    const end = Date.now() + 10000;
+app.use('/api', limiter);
 
-    while (Date.now() < end) {
-        Math.random();
-    }
+app.get("/api/cpu-test", (req, res) => {
+  const duration = Number(req.query.duration) || 10000; // default 10 seconds
 
-    res.send("done");
+  const end = Date.now() + duration;
+
+  while (Date.now() < end) {
+    // CPU Busy রাখা
+    Math.sqrt(Math.random() * 1000000);
+  }
+
+  res.json({
+    success: true,
+    message: `CPU stressed for ${duration} ms`,
+  });
 });
-
 
 // Health check
 app.get('/health', (req, res) => {
